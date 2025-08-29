@@ -46,12 +46,11 @@ st.set_page_config(
 st.title("⭕ Circle Calculator App")
 st.markdown("""
 <p style='font-size:14px; color:gray;'>
-&#128100; Abdullah Al Shakhee | Statistician & O-level Math Teacher | Data & Quantitative Analysis Enthusiast
+&#128100; Abdullah Al Shakhee | Statistician & O-level Math Teacher | ML Enthusiast
 </p>
 """, unsafe_allow_html=True)
 
 st.markdown("""
-This app calculates circle equations and plots them based on different input methods.
 Select a calculation type from the dropdown menu below.
 """)
 
@@ -284,39 +283,61 @@ elif option == "4. Circle from center + 1 point":
 # ----------------------------
 elif option == "5. Circle: center on line + 2 points":
     st.header("Circle with Center on a Line")
-    st.write("Enter a line equation and two points on the circle")
+    st.write("Enter a line equation in the form ax + by + c = 0 and two points on the circle")
     
-    st.subheader("Line Equation")
-    col1, col2 = st.columns(2)
+    st.subheader("Line Equation: ax + by + c = 0")
+    col1, col2, col3 = st.columns(3)
     with col1:
-        m = st.text_input("Slope (m)", "1")
+        a_line = st.text_input("Coefficient a", "1")
     with col2:
-        c_line = st.text_input("Intercept (c)", "0")
+        b_line = st.text_input("Coefficient b", "-1")
+    with col3:
+        c_line = st.text_input("Constant c", "0")
     
     st.subheader("Points on Circle")
-    col3, col4 = st.columns(2)
-    with col3:
+    col4, col5 = st.columns(2)
+    with col4:
         X1 = st.text_input("Point 1 x", "1", key="line_x1")
         Y1 = st.text_input("Point 1 y", "1", key="line_y1")
-    with col4:
+    with col5:
         X2 = st.text_input("Point 2 x", "2", key="line_x2")
         Y2 = st.text_input("Point 2 y", "0", key="line_y2")
 
     if st.button("Compute & Plot", key="type5"):
         try:
-            m, c_line, X1, Y1, X2, Y2 = map(parse_input, [m, c_line, X1, Y1, X2, Y2])
+            a_line, b_line, c_line, X1, Y1, X2, Y2 = map(parse_input, 
+                                                         [a_line, b_line, c_line, X1, Y1, X2, Y2])
             
-            # Center (h,k) lies on line: y = m*h + c
-            # Solve circle: (X1-h)^2 + (Y1-k)^2 = (X2-h)^2 + (Y2-k)^2
-            # Solve for h
-            denominator = 2 * (X1 - X2 + m * (Y2 - Y1))
+            # Center (h,k) lies on line: a*h + b*k + c = 0
+            # And is equidistant from both points: (X1-h)² + (Y1-k)² = (X2-h)² + (Y2-k)²
             
-            if abs(denominator) < 1e-10:
-                st.error("Points and line do not form a unique circle or points are collinear.")
+            # Expand the distance equality:
+            # X1² - 2X1h + h² + Y1² - 2Y1k + k² = X2² - 2X2h + h² + Y2² - 2Y2k + k²
+            # Simplify:
+            # X1² + Y1² - 2X1h - 2Y1k = X2² + Y2² - 2X2h - 2Y2k
+            # Rearrange:
+            # 2(X2 - X1)h + 2(Y2 - Y1)k = X2² + Y2² - X1² - Y1²
+            
+            # We have two equations:
+            # 1) a*h + b*k + c = 0
+            # 2) 2(X2 - X1)h + 2(Y2 - Y1)k = (X2² + Y2² - X1² - Y1²)
+            
+            # Solve the system of equations
+            A = np.array([
+                [a_line, b_line],
+                [2*(X2 - X1), 2*(Y2 - Y1)]
+            ])
+            
+            B = np.array([
+                -c_line,
+                X2**2 + Y2**2 - X1**2 - Y1**2
+            ])
+            
+            try:
+                h, k = np.linalg.solve(A, B)
+            except np.linalg.LinAlgError:
+                st.error("Points and line do not form a unique circle. The line might be perpendicular to the line joining the two points.")
                 st.stop()
-
-            h = ((X1**2 + Y1**2 - X2**2 - Y2**2) + 2 * m * (Y2 - Y1)) / denominator
-            k = m * h + c_line
 
             # Calculate radius
             r_squared = (X1 - h)**2 + (Y1 - k)**2
@@ -336,6 +357,16 @@ elif option == "5. Circle: center on line + 2 points":
             st.write(f"**Equation:** x² + y² {C:+.3f}x {D:+.3f}y {E:+.3f} = 0")
             st.write(f"**Center:** ({to_fraction(h)}, {to_fraction(k)})")
             st.write(f"**Radius:** {display_radius(r)}")
+            
+            # Convert line to slope-intercept form for plotting (if possible)
+            if abs(b_line) > 1e-10:  # If b ≠ 0
+                slope = -a_line / b_line
+                intercept = -c_line / b_line
+                line_label = f'Line: {a_line}x + {b_line}y + {c_line} = 0'
+            else:  # Vertical line (b = 0)
+                slope = None
+                intercept = None
+                line_label = f'Line: x = {-c_line/a_line}'
 
             # Plot circle, points, and line
             theta = np.linspace(0, 2*np.pi, 600)
@@ -345,10 +376,16 @@ elif option == "5. Circle: center on line + 2 points":
             ax.scatter(h, k, color="green", s=100, label="Center")
             
             # Plot the line
-            line_x = np.array(ax.get_xlim())
-            line_y = m * line_x + c_line
-            ax.plot(line_x, line_y, color='orange', linestyle='--', 
-                   label=f'Line: y = {to_fraction(m)}x + {to_fraction(c_line)}')
+            if slope is not None:  # Non-vertical line
+                line_x = np.array(ax.get_xlim())
+                line_y = slope * line_x + intercept
+                ax.plot(line_x, line_y, color='orange', linestyle='--', label=line_label)
+            else:  # Vertical line
+                x_val = -c_line / a_line
+                line_y = np.array(ax.get_ylim())
+                line_x = np.full_like(line_y, x_val)
+                ax.plot(line_x, line_y, color='orange', linestyle='--', label=line_label)
+                
             ax.legend()
             st.pyplot(fig)
         except Exception as e:
@@ -367,4 +404,5 @@ st.markdown("""
 <div class="footer">
     Circle Calculator App | Made with Streamlit
 </div>
+
 """, unsafe_allow_html=True)
