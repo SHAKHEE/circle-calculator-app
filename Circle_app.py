@@ -291,16 +291,25 @@ elif option == "4. Circle from center + 1 point":
 elif option == "5. Circle with center on a line + 2 points":
     st.subheader("Equation 5: Circle with center on a line and passing through 2 points")
 
-    # Line coefficients
-    a_line = st.number_input("Coefficient a (line: ax + by + c = 0)", value=1.0)
-    b_line = st.number_input("Coefficient b", value=-1.0)
-    c_line = st.number_input("Coefficient c", value=0.0)
+    # Line coefficients in 1 row (3 columns)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        a_line = st.number_input("Coefficient a (line: ax + by + c = 0)", value=1.0)
+    with col2:
+        b_line = st.number_input("Coefficient b", value=0.0)
+    with col3:
+        c_line = st.number_input("Coefficient c", value=0.0)
 
-    # Two points
-    x1 = st.number_input("x-coordinate of point 1", value=1.0)
-    y1 = st.number_input("y-coordinate of point 1", value=0.0)
-    x2 = st.number_input("x-coordinate of point 2", value=0.0)
-    y2 = st.number_input("y-coordinate of point 2", value=1.0)
+    # Two points in 2 columns
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Point 1")
+        x1 = float(st.text_input("x₁", "0"))
+        y1 = float(st.text_input("y₁", "0"))
+    with col2:
+        st.subheader("Point 2")
+        x2 = float(st.text_input("x₂", "0"))
+        y2 = float(st.text_input("y₂", "0"))
 
     if st.button("Compute & Plot", key="type5"):
         # Step 1: Find midpoint of the chord P1P2
@@ -366,8 +375,7 @@ elif option == "5. Circle with center on a line + 2 points":
         st.success(f"✅ Circle Equation: (x - {h:.2f})² + (y - {k:.2f})² = {r:.2f}²")
 
 
- 
-        
+
 
 # Footer
 st.markdown("---")
@@ -384,6 +392,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
