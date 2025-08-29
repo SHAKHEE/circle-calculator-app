@@ -312,32 +312,79 @@ elif option == "5. Circle: center on line + 2 points":
             # And is equidistant from both points: (X1-h)² + (Y1-k)² = (X2-h)² + (Y2-k)²
             
             # Expand the distance equality:
-            # X1² - 2X1h + h² + Y1² - 2Y1k + k² = X2² - 2X2h + h² + Y2² - 2Y2k + k²
-            # Simplify:
             # X1² + Y1² - 2X1h - 2Y1k = X2² + Y2² - 2X2h - 2Y2k
             # Rearrange:
             # 2(X2 - X1)h + 2(Y2 - Y1)k = X2² + Y2² - X1² - Y1²
             
-            # We have two equations:
-            # 1) a*h + b*k + c = 0
-            # 2) 2(X2 - X1)h + 2(Y2 - Y1)k = (X2² + Y2² - X1² - Y1²)
+            # Create the system of equations:
+            # Equation 1: a*h + b*k = -c
+            # Equation 2: 2(X2-X1)h + 2(Y2-Y1)k = (X2²+Y2²-X1²-Y1²)
             
-            # Solve the system of equations
-            A = np.array([
-                [a_line, b_line],
-                [2*(X2 - X1), 2*(Y2 - Y1)]
-            ])
+            # Check if the system is solvable
+            if abs(a_line) < 1e-10 and abs(b_line) < 1e-10:
+                st.error("Invalid line equation: both a and b cannot be zero.")
+                st.stop()
             
-            B = np.array([
-                -c_line,
-                X2**2 + Y2**2 - X1**2 - Y1**2
-            ])
+            # Use a more robust approach - solve using matrix inversion with fallback
+            A = np.array([[a_line, b_line], 
+                         [2*(X2-X1), 2*(Y2-Y1)]])
+            B = np.array([-c_line, X2**2 + Y2**2 - X1**2 - Y1**2])
             
             try:
+                # Try direct solution first
                 h, k = np.linalg.solve(A, B)
             except np.linalg.LinAlgError:
-                st.error("Points and line do not form a unique circle. The line might be perpendicular to the line joining the two points.")
-                st.stop()
+                # If matrix is singular, use alternative method
+                try:
+                    # The line might be perpendicular to the line joining the points
+                    # Use the fact that the center is the intersection of the given line
+                    # and the perpendicular bisector of the two points
+                    
+                    # Midpoint of the two points
+                    mid_x = (X1 + X2) / 2
+                    mid_y = (Y1 + Y2) / 2
+                    
+                    # Slope of line joining the points
+                    if abs(X2 - X1) > 1e-10:
+                        slope_join = (Y2 - Y1) / (X2 - X1)
+                        # Slope of perpendicular bisector
+                        slope_perp = -1 / slope_join if abs(slope_join) > 1e-10 else float('inf')
+                    else:
+                        slope_perp = 0  # Vertical line becomes horizontal perpendicular
+                    
+                    # If the given line is not vertical
+                    if abs(b_line) > 1e-10:
+                        slope_line = -a_line / b_line
+                        intercept_line = -c_line / b_line
+                        
+                        if abs(slope_perp - slope_line) < 1e-10:  # Lines are parallel
+                            st.error("The given line is parallel to the perpendicular bisector. No unique solution.")
+                            st.stop()
+                            
+                        if not np.isinf(slope_perp):
+                            # Equation of perpendicular bisector: y - mid_y = slope_perp(x - mid_x)
+                            # Solve with given line: y = slope_line*x + intercept_line
+                            h = (mid_y - slope_perp*mid_x - intercept_line) / (slope_line - slope_perp)
+                            k = slope_line * h + intercept_line
+                        else:
+                            # Perpendicular bisector is vertical x = mid_x
+                            h = mid_x
+                            k = slope_line * h + intercept_line
+                    else:
+                        # Given line is vertical: x = -c_line/a_line
+                        h = -c_line / a_line
+                        if not np.isinf(slope_perp):
+                            k = mid_y + slope_perp * (h - mid_x)
+                        else:
+                            st.error("Both line and perpendicular bisector are vertical. No solution.")
+                            st.stop()
+                except Exception as inner_e:
+                    st.error(f"Cannot find a solution: {str(inner_e)}")
+                    st.stop()
+
+            # Verify the center lies on the line
+            if abs(a_line*h + b_line*k + c_line) > 1e-15:
+                st.warning("Numerical precision issue: Center doesn't exactly lie on the line.")
 
             # Calculate radius
             r_squared = (X1 - h)**2 + (Y1 - k)**2
@@ -358,6 +405,7 @@ elif option == "5. Circle: center on line + 2 points":
             st.write(f"**Center:** ({to_fraction(h)}, {to_fraction(k)})")
             st.write(f"**Radius:** {display_radius(r)}")
             
+            # Plotting code remains the same as before
             # Convert line to slope-intercept form for plotting (if possible)
             if abs(b_line) > 1e-10:  # If b ≠ 0
                 slope = -a_line / b_line
@@ -369,6 +417,15 @@ elif option == "5. Circle: center on line + 2 points":
                 line_label = f'Line: x = {-c_line/a_line}'
 
             # Plot circle, points, and line
+            fig, ax = plt.subplots(figsize=(7, 7))
+            ax.axhline(0, color="black", linewidth=0.5, linestyle="--", alpha=0.7)
+            ax.axvline(0, color="black", linewidth=0.5, linestyle="--", alpha=0.7)
+            ax.set_aspect("equal")
+            ax.grid(True, linestyle='--', alpha=0.7)
+            ax.set_xlabel('x-axis')
+            ax.set_ylabel('y-axis')
+            ax.set_title('Circle Visualization')
+            
             theta = np.linspace(0, 2*np.pi, 600)
             x = h + r*np.cos(theta); y = k + r*np.sin(theta)
             ax.plot(x, y, color='blue', linewidth=2, label="Circle")
@@ -388,8 +445,11 @@ elif option == "5. Circle: center on line + 2 points":
                 
             ax.legend()
             st.pyplot(fig)
+            
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
+ 
+        
 
 # Footer
 st.markdown("---")
@@ -402,7 +462,8 @@ st.markdown("""
 }
 </style>
 <div class="footer">
-    Circle Calculator App | Made with Streamlit
+    Circle Calculator App | Made By Abdullah
 </div>
 
 """, unsafe_allow_html=True)
+
