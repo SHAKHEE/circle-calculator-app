@@ -290,15 +290,16 @@ elif option == "4. Circle from center + 1 point":
 # ----------------------------
 elif option == "5. Circle with center on a line + 2 points":
     st.subheader("Equation 5: Circle with center on a line and passing through 2 points")
-
-    # Line coefficients in 1 row (3 columns)
+    st.write("Enter the line equation coefficients (ax + by + c = 0) below:")
+    
+    # Line coefficients in 1 row (3 columns) using text_input
     col1, col2, col3 = st.columns(3)
     with col1:
-        a_line = st.number_input("Coefficient a (line: ax + by + c = 0)", value=1.0)
+        a_line = st.text_input("Coefficient a", "0")
     with col2:
-        b_line = st.number_input("Coefficient b", value=0.0)
+        b_line = st.text_input("Coefficient b", "0")
     with col3:
-        c_line = st.number_input("Coefficient c", value=0.0)
+        c_line = st.text_input("Coefficient c", "0")
 
     # Two points in 2 columns
     col1, col2 = st.columns(2)
@@ -392,6 +393,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
