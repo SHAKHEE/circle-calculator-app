@@ -142,7 +142,6 @@ if option == "1. General equation inputs":
                     y = k + r*np.sin(theta)
                     ax.plot(x, y, color='blue', linewidth=2, label="Circle")
                     ax.scatter(h, k, color="red", s=100, label="Center")
-                    ax.legend()
                     st.pyplot(fig)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
@@ -193,7 +192,6 @@ elif option == "2. Circle from 3 points":
             ax.plot(x, y, color='blue', linewidth=2, label="Circle")
             ax.scatter([X1, X2, X3], [Y1, Y2, Y3], color="red", s=100, label="Given Points")
             ax.scatter(h, k, color="green", s=100, label="Center")
-            ax.legend()
             st.pyplot(fig)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
@@ -236,7 +234,6 @@ elif option == "3. Circle from 2 endpoints of diameter":
             
             # Draw diameter line
             ax.plot([X1, X2], [Y1, Y2], color='orange', linestyle='--', label="Diameter")
-            ax.legend()
             st.pyplot(fig)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
@@ -275,7 +272,6 @@ elif option == "4. Circle from center + 1 point":
             ax.plot(x, y, color='blue', linewidth=2, label="Circle")
             ax.scatter([X1], [Y1], color="red", s=100, label="Given Point")
             ax.scatter(h, k, color="green", s=100, label="Center")
-            ax.legend()
             st.pyplot(fig)
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
@@ -308,115 +304,45 @@ elif option == "5. Circle: center on line + 2 points":
             a_line, b_line, c_line, X1, Y1, X2, Y2 = map(parse_input, 
                                                          [a_line, b_line, c_line, X1, Y1, X2, Y2])
             
-            # Center (h,k) lies on line: a*h + b*k + c = 0
-            # And is equidistant from both points: (X1-h)² + (Y1-k)² = (X2-h)² + (Y2-k)²
+            # Equation system:
+            # 1) a*h + b*k + c = 0
+            # 2) (X1-h)^2 + (Y1-k)^2 = (X2-h)^2 + (Y2-k)^2
             
-            # Expand the distance equality:
-            # X1² + Y1² - 2X1h - 2Y1k = X2² + Y2² - 2X2h - 2Y2k
-            # Rearrange:
-            # 2(X2 - X1)h + 2(Y2 - Y1)k = X2² + Y2² - X1² - Y1²
-            
-            # Create the system of equations:
-            # Equation 1: a*h + b*k = -c
-            # Equation 2: 2(X2-X1)h + 2(Y2-Y1)k = (X2²+Y2²-X1²-Y1²)
-            
-            # Check if the system is solvable
-            if abs(a_line) < 1e-10 and abs(b_line) < 1e-10:
-                st.error("Invalid line equation: both a and b cannot be zero.")
-                st.stop()
-            
-            # Use a more robust approach - solve using matrix inversion with fallback
-            A = np.array([[a_line, b_line], 
-                         [2*(X2-X1), 2*(Y2-Y1)]])
-            B = np.array([-c_line, X2**2 + Y2**2 - X1**2 - Y1**2])
+            A = np.array([
+                [a_line, b_line],
+                [2*(X2 - X1), 2*(Y2 - Y1)]
+            ])
+            B = np.array([
+                -c_line,
+                X2**2 + Y2**2 - X1**2 - Y1**2
+            ])
             
             try:
-                # Try direct solution first
                 h, k = np.linalg.solve(A, B)
             except np.linalg.LinAlgError:
-                # If matrix is singular, use alternative method
-                try:
-                    # The line might be perpendicular to the line joining the points
-                    # Use the fact that the center is the intersection of the given line
-                    # and the perpendicular bisector of the two points
-                    
-                    # Midpoint of the two points
-                    mid_x = (X1 + X2) / 2
-                    mid_y = (Y1 + Y2) / 2
-                    
-                    # Slope of line joining the points
-                    if abs(X2 - X1) > 1e-10:
-                        slope_join = (Y2 - Y1) / (X2 - X1)
-                        # Slope of perpendicular bisector
-                        slope_perp = -1 / slope_join if abs(slope_join) > 1e-10 else float('inf')
-                    else:
-                        slope_perp = 0  # Vertical line becomes horizontal perpendicular
-                    
-                    # If the given line is not vertical
-                    if abs(b_line) > 1e-10:
-                        slope_line = -a_line / b_line
-                        intercept_line = -c_line / b_line
-                        
-                        if abs(slope_perp - slope_line) < 1e-10:  # Lines are parallel
-                            st.error("The given line is parallel to the perpendicular bisector. No unique solution.")
-                            st.stop()
-                            
-                        if not np.isinf(slope_perp):
-                            # Equation of perpendicular bisector: y - mid_y = slope_perp(x - mid_x)
-                            # Solve with given line: y = slope_line*x + intercept_line
-                            h = (mid_y - slope_perp*mid_x - intercept_line) / (slope_line - slope_perp)
-                            k = slope_line * h + intercept_line
-                        else:
-                            # Perpendicular bisector is vertical x = mid_x
-                            h = mid_x
-                            k = slope_line * h + intercept_line
-                    else:
-                        # Given line is vertical: x = -c_line/a_line
-                        h = -c_line / a_line
-                        if not np.isinf(slope_perp):
-                            k = mid_y + slope_perp * (h - mid_x)
-                        else:
-                            st.error("Both line and perpendicular bisector are vertical. No solution.")
-                            st.stop()
-                except Exception as inner_e:
-                    st.error(f"Cannot find a solution: {str(inner_e)}")
-                    st.stop()
-
-            # Verify the center lies on the line
-            if abs(a_line*h + b_line*k + c_line) > 1e-15:
-                st.warning("Numerical precision issue: Center doesn't exactly lie on the line.")
-
-            # Calculate radius
+                st.error("❌ No unique solution (line may be parallel to perpendicular bisector or points collinear).")
+                st.stop()
+            
+            # Radius from one point
             r_squared = (X1 - h)**2 + (Y1 - k)**2
             if r_squared < 0:
-                st.error("No real circle (imaginary radius).")
+                st.error("❌ Imaginary radius, check inputs.")
                 st.stop()
             r = math.sqrt(r_squared)
 
-            # Calculate coefficients for general equation
-            C = -2 * h
-            D = -2 * k
+            # General equation form
+            C = -2*h
+            D = -2*k
             E = h**2 + k**2 - r**2
 
-            # Display results
-            st.success("Calculation successful!")
+            # --- Display results ---
+            st.success("✅ Calculation successful!")
             st.subheader("Results:")
             st.write(f"**Equation:** x² + y² {C:+.3f}x {D:+.3f}y {E:+.3f} = 0")
             st.write(f"**Center:** ({to_fraction(h)}, {to_fraction(k)})")
             st.write(f"**Radius:** {display_radius(r)}")
-            
-            # Plotting code remains the same as before
-            # Convert line to slope-intercept form for plotting (if possible)
-            if abs(b_line) > 1e-10:  # If b ≠ 0
-                slope = -a_line / b_line
-                intercept = -c_line / b_line
-                line_label = f'Line: {a_line}x + {b_line}y + {c_line} = 0'
-            else:  # Vertical line (b = 0)
-                slope = None
-                intercept = None
-                line_label = f'Line: x = {-c_line/a_line}'
 
-            # Plot circle, points, and line
+            # --- Plotting ---
             fig, ax = plt.subplots(figsize=(7, 7))
             ax.axhline(0, color="black", linewidth=0.5, linestyle="--", alpha=0.7)
             ax.axvline(0, color="black", linewidth=0.5, linestyle="--", alpha=0.7)
@@ -425,29 +351,34 @@ elif option == "5. Circle: center on line + 2 points":
             ax.set_xlabel('x-axis')
             ax.set_ylabel('y-axis')
             ax.set_title('Circle Visualization')
-            
+
+            # Plot circle
             theta = np.linspace(0, 2*np.pi, 600)
-            x = h + r*np.cos(theta); y = k + r*np.sin(theta)
+            x = h + r*np.cos(theta)
+            y = k + r*np.sin(theta)
             ax.plot(x, y, color='blue', linewidth=2, label="Circle")
+
+            # Points and center
             ax.scatter([X1, X2], [Y1, Y2], color="red", s=100, label="Given Points")
             ax.scatter(h, k, color="green", s=100, label="Center")
-            
-            # Plot the line
-            if slope is not None:  # Non-vertical line
-                line_x = np.array(ax.get_xlim())
+
+            # Plot line
+            if abs(b_line) > 1e-10:
+                slope = -a_line / b_line
+                intercept = -c_line / b_line
+                line_x = np.linspace(h - 2*r, h + 2*r, 400)
                 line_y = slope * line_x + intercept
-                ax.plot(line_x, line_y, color='orange', linestyle='--', label=line_label)
-            else:  # Vertical line
+                ax.plot(line_x, line_y, color='orange', linestyle='--', label=f"Line: {a_line}x + {b_line}y + {c_line} = 0")
+            else:  # vertical line
                 x_val = -c_line / a_line
-                line_y = np.array(ax.get_ylim())
-                line_x = np.full_like(line_y, x_val)
-                ax.plot(line_x, line_y, color='orange', linestyle='--', label=line_label)
-                
-            ax.legend()
+                line_y = np.linspace(k - 2*r, k + 2*r, 400)
+                ax.plot([x_val]*len(line_y), line_y, color='orange', linestyle='--', label=f"x = {x_val}")
+
             st.pyplot(fig)
-            
+
         except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+            st.error(f"⚠️ An error occurred: {str(e)}")
+
  
         
 
@@ -466,4 +397,5 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
