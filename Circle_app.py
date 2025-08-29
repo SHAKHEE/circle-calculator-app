@@ -46,7 +46,7 @@ st.set_page_config(
 st.title("⭕ Circle Calculator App")
 st.markdown("""
 <p style='font-size:14px; color:gray;'>
-&#128100; Abdullah Al Shakhee | Statistician & O-level Math Teacher | ML Enthusiast
+&#128100; Abdullah Al Shakhee || Statistician || ML Enthusiast
 </p>
 """, unsafe_allow_html=True)
 
@@ -159,14 +159,14 @@ elif option == "2. Circle from 3 points":
     with col1:
         st.subheader("Point 1")
         X1 = st.text_input("x₁", "0")
-        Y1 = st.text_input("y₁", "1")
+        Y1 = st.text_input("y₁", "0")
     with col2:
         st.subheader("Point 2")
-        X2 = st.text_input("x₂", "1")
+        X2 = st.text_input("x₂", "0")
         Y2 = st.text_input("y₂", "0")
     
     st.subheader("Point 3")
-    X3 = st.text_input("x₃", "-1")
+    X3 = st.text_input("x₃", "0")
     Y3 = st.text_input("y₃", "0")
 
     if st.button("Compute & Plot", key="type2"):
@@ -214,7 +214,7 @@ elif option == "3. Circle from 2 endpoints of diameter":
         Y1 = st.text_input("y₁", "0", key="dia_y1")
     with col2:
         st.subheader("Endpoint 2")
-        X2 = st.text_input("x₂", "2", key="dia_x2")
+        X2 = st.text_input("x₂", "0", key="dia_x2")
         Y2 = st.text_input("y₂", "0", key="dia_y2")
 
     if st.button("Compute & Plot", key="type3"):
@@ -259,7 +259,7 @@ elif option == "4. Circle from center + 1 point":
         k = st.text_input("Center y", "0", key="center_y")
     with col2:
         st.subheader("Point on Circle")
-        X1 = st.text_input("Point x", "1", key="point_x")
+        X1 = st.text_input("Point x", "0", key="point_x")
         Y1 = st.text_input("Point y", "0", key="point_y")
 
     if st.button("Compute & Plot", key="type4"):
@@ -392,6 +392,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
