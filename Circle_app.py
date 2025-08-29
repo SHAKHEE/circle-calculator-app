@@ -291,7 +291,7 @@ elif option == "4. Circle from center + 1 point":
 elif option == "5. Circle with center on a line + 2 points":
     st.subheader("Equation 5: Circle with center on a line and passing through 2 points")
     st.write("Enter the line equation coefficients (ax + by + c = 0) below:")
-    
+
     # Line coefficients in 1 row (3 columns) using text_input
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -305,26 +305,39 @@ elif option == "5. Circle with center on a line + 2 points":
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Point 1")
-        x1 = float(st.text_input("x₁", "0"))
-        y1 = float(st.text_input("y₁", "0"))
+        x1 = st.text_input("x₁", "0")
+        y1 = st.text_input("y₁", "0")
     with col2:
         st.subheader("Point 2")
-        x2 = float(st.text_input("x₂", "0"))
-        y2 = float(st.text_input("y₂", "0"))
+        x2 = st.text_input("x₂", "0")
+        y2 = st.text_input("y₂", "0")
 
     if st.button("Compute & Plot", key="type5"):
-        # Step 1: Find midpoint of the chord P1P2
+        # --- Convert all inputs to float using parse_input() ---
+        try:
+            a_line = parse_input(a_line)
+            b_line = parse_input(b_line)
+            c_line = parse_input(c_line)
+            x1 = parse_input(x1)
+            y1 = parse_input(y1)
+            x2 = parse_input(x2)
+            y2 = parse_input(y2)
+        except:
+            st.error("❌ Invalid input. Please enter numbers or fractions like 1/2.")
+            st.stop()
+
+        # Step 1: Midpoint of chord
         mid_x = (x1 + x2) / 2
         mid_y = (y1 + y2) / 2
 
-        # Step 2: Equation of perpendicular bisector of P1P2
+        # Step 2: Perpendicular bisector
         dx = x2 - x1
         dy = y2 - y1
         perp_a = dx
         perp_b = dy
         perp_c = -(perp_a * mid_x + perp_b * mid_y)
 
-        # Step 3: Solve intersection of line and perpendicular bisector → center
+        # Step 3: Solve intersection → center
         A = np.array([[a_line, b_line], [perp_a, perp_b]])
         B = np.array([-c_line, -perp_c])
         try:
@@ -333,7 +346,7 @@ elif option == "5. Circle with center on a line + 2 points":
             st.error("❌ Cannot determine circle center (lines are parallel).")
             st.stop()
 
-        # Step 4: Radius from center to one of the points
+        # Step 4: Radius
         r = math.sqrt((h - x1) ** 2 + (k - y1) ** 2)
 
         # Step 5: Plot
@@ -346,37 +359,28 @@ elif option == "5. Circle with center on a line + 2 points":
         ax.set_ylabel("y-axis")
         ax.set_title("Circle Visualization")
 
-        # Draw circle
+        # Circle
         circle = plt.Circle((h, k), r, color="blue", fill=False, linewidth=2)
         ax.add_artist(circle)
-
-        # Plot center
         ax.plot(h, k, "ro", label="Center")
-
-        # Plot given points
         ax.plot([x1, x2], [y1, y2], "go", label="Given Points")
 
         # Plot line ax+by+c=0
-        line_x = np.linspace(-10, 10, 400)
-        if b_line != 0:
-            line_y = (-a_line * line_x - c_line) / b_line
-            # Format line equation nicely
-            line_eq = f"{a_line}x {'+' if b_line >= 0 else '-'} {abs(b_line)}y {'+' if c_line >= 0 else '-'} {abs(c_line)} = 0"
-            ax.plot(line_x, line_y, color="orange", linestyle="--", label=line_eq)
-        else:
-            # Vertical line
-            line_x = np.full(400, -c_line / a_line)
-            line_y = np.linspace(-10, 10, 400)
-            ax.plot(line_x, line_y, color="orange", linestyle="--", label=f"x = {-c_line/a_line}")
+        line_x_vals = np.linspace(-10, 10, 400)
+        if abs(b_line) > 1e-10:
+            line_y_vals = (-a_line * line_x_vals - c_line) / b_line
+            ax.plot(line_x_vals, line_y_vals, color="orange", linestyle="--",
+                    label=f"{a_line}x + {b_line}y + {c_line} = 0")
+        else:  # vertical line
+            line_x_vals = np.full(400, -c_line / a_line)
+            line_y_vals = np.linspace(-10, 10, 400)
+            ax.plot(line_x_vals, line_y_vals, color="orange", linestyle="--",
+                    label=f"x = {-c_line/a_line}")
 
         ax.legend()
         st.pyplot(fig)
 
-        # Show circle equation
         st.success(f"✅ Circle Equation: (x - {h:.2f})² + (y - {k:.2f})² = {r:.2f}²")
-
-
-
 
 # Footer
 st.markdown("---")
@@ -393,6 +397,7 @@ st.markdown("""
 </div>
 
 """, unsafe_allow_html=True)
+
 
 
 
